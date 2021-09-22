@@ -9,10 +9,10 @@ yodchoice=as.integer(args[2])  #Choice of month/initial-doy
 yodlist=c(1,32,61,92,122,153,183,214,245,275,306,336)
 yod=yodlist[yodchoice]
 
-## Also important to choose which years we are using for training
+## VERY important to choose which years we are using for training
 ylist=1989:1998
 
-# and recommended to save the Alphaset (training weights) with a dwescriptive name in case you wish to test/compare different years/sets, separated by the hemisphere
+# Also recommended to save the Alphaset (training weights) with a descriptive name in case you wish to test/compare different years/sets, separated by the hemisphere
 if(ccc == 1){
   HEM="nh"
   Alphasetname="NewTraining_2021NH_yrs89to98"}
