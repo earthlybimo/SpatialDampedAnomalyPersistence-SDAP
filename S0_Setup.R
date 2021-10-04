@@ -37,7 +37,7 @@ if(!dir.exists(Datapath2)) warning("Data folder 2 (OSI430b/osisaf.met.no) NOT fo
 file1=Sys.glob(sprintf("%s/reprocessed/ice/conc/v2p0/????/??/*_%s*.nc",Datapath1,HEM))  
 # Here, we depict whether it is a SH or NH file by using the HEM.
 if(length(file1)==0) stop("No data file (netcdf) found. Either there is an issue with the path or something in the script is not correct. Check!")
-print(paste("Things look mostly good so far! Making the grid file now.",sep = ""))
+print(paste0("Things look mostly good so far! Making the grid file now."))
 
 
 ##### Section to create the grid/land-lake mask, and save gridfile that can be reused repeatedly-----------------------
@@ -154,15 +154,15 @@ grd$Elementareas=Elementareas
 
 save(file = gridFilename,Gridfromwhichfile,grd.full,alllake,allland,grd.postlandlake.prebaynoderemoval,grd,nodes.kept,version = 2)
 
-print(paste("Grid file saved:",basename(gridFilename),sep = ""))
+print(paste0("Grid file saved:",basename(gridFilename)))
 
 ######### Make other folders that we need: --------------
 
-dir.create(paste(HEMPATH,"/Outputs/Climatology",sep = ""))
-dir.create(paste(HEMPATH,"/Outputs/savedSIP",sep = ""))
-dir.create(paste(HEMPATH,"/Outputs/Forecasts",sep = ""))
-dir.create(paste(HEMPATH,"/Outputs/Alpha",sep = ""))
-
+dir.create(paste0(HEMPATH,"/Outputs/Climatology"))
+dir.create(paste0(HEMPATH,"/Outputs/savedSIP"))
+dir.create(paste0(HEMPATH,"/Outputs/Forecasts"))
+dir.create(paste0(HEMPATH,"/Outputs/Alpha"))
+dir.create(paste0(MASTERPATH,"/Figs"))
 
 ## These folders are needed if we want to compare whether NO gaussian filtering is better:
 # dir.create(paste(HEMPATH,"/Outputs/NOGausssavedSIP",sep = ""))
@@ -182,6 +182,6 @@ gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R%i_cutoff%i",HEMPATH,HEM,Rspher
 
 sf.gw.res=sl.spatialfilter.getweights(lon=grd$lon,lat=grd$lat,neighmat = grd$neighnodes,areas = grd$Nodeareas,Rsphere = 1,gauss.sigma = gauss.sigma,cutoff = cutoff*gauss.sigma)#for this specific grid, the weights are the same. it results in this list: sf.gw.res
 save(file = gsnwtfile,sf.gw.res,version = 2)  
-print(paste("Gaussian weight saved: ",basename(gsnwtfile),sep = ""))
+print(paste0("Gaussian weight saved: ",basename(gsnwtfile)))
 toc()
 print("All done with Setup!")
