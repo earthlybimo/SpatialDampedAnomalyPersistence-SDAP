@@ -13,9 +13,9 @@ if(ccc == 1){
 if(ccc== 2){
   HEM="sh"
   Alphasetname="NewTraining_2021SH_yrs89to98"}
-yc=as.integer(args[2]) #Choice of initialisation date (each doy corresponds to the start of a particular month)
+mc=as.integer(args[2]) #Choice of initialisation date (each doy corresponds to the start of a particular month)
 yodlist=c(1,32,61,92,122,153,183,214,245,275,306,336)
-yodi= yodlist[yc]
+yodi= yodlist[mc]
 
 fcstylist=1999:2021
 if(length(args)==3) {
@@ -76,7 +76,7 @@ for(ynum in 1:length(fcstylist)){
   
   for (leadtime in 1:366){  
     alpha=bestalpha[leadtime]
-    tempcast=detFcenv$Forecast[,leadtime]*(alpha)  #NEW definition, alpha =0 when Forecast = 0
+    tempcast=detFcenv$Forecast[,leadtime]*(alpha)  #alpha =0 when SAP weight in the Forecast = 0
     tempcast2=detFcenv$AllClimaArr[,leadtime]*(1-alpha)
     Forecast_wDamping[,leadtime]=tempcast+tempcast2
     remove(tempcast,tempcast2)
