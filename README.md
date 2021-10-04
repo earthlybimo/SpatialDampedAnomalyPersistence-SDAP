@@ -3,14 +3,15 @@ Script to generate the SpatialDampedAnomalyPersistence forecast from historical 
 
 
 # Required packages:
-We need these two R packages to use the method:
+We need two R packages to use the method:
 
 ncdf4  #To open netcdf files
 
 spheRlab #To generate contours, plots and other grid functions
 (can be downloaded from here: https://github.com/FESOM/spheRlab)
 
-tictoc #Used for timing but optional
+Optionally, it is also useful to have this package for timing the operations:
+tictoc 
 
 # Data Directory
 We will use one specific path for all our data operations. Please choose this appropriately to handle storage issues. Softlinks are also ok.
@@ -39,3 +40,6 @@ In the rest of the scripts, we will assume that the data has already been downlo
 Datapath1=paste0(MASTERPATH,"/OSI450/osisaf.met.no") #OSI 450 
 Datapath2=paste0(MASTERPATH,"/OSI430b/osisaf.met.no")#OSI 430b
 
+
+# Output data
+All saved data is here in the native R data format, therefore designed to be opened and accessed using R software. Script 'S6_PlotSPSandMaps.R' shows the steps used to plot the SPS or create maps of the forecasted sea-ice conditions at a given leadtime for the chosen initial date.
