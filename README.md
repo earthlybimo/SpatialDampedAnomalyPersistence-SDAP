@@ -13,19 +13,6 @@ spheRlab #To generate contours, plots and other grid functions
 Optionally, it is also useful to have this package for timing the operations:
 tictoc 
 
-# Data Directory
-We will use one specific path for all our data operations. Please choose this appropriately to handle storage issues. Softlinks are also ok.
-MASTERPATH="~/WORK/Data/SDAP/"
-
-In each script, this path has been stated at the top and can be changed with the appropriate storage path. 
-
-Within this masterdirectory, we will divide our outputs by hemisphere.
-For example, HEM="sh" or HEM ="nh"
-HEMPATH=paste0(MASTERPATH,"/",HEM)
-dir.create(paste0(HEMPATH,"/Outputs/"),recursive = T)
-
-All outputs will be saved accordingly in this folder, further divided into subfolders
-
 # Input data
 We need the input data to find initial ice-edge and climatological SIP. For this example, we will use the SIC records from OSI SAF. Other SIC records can also be used, although some troubleshooting might be required in further steps. OSI SAF data can be downloaded from here:
 
@@ -42,4 +29,20 @@ Datapath2=paste0(MASTERPATH,"/OSI430b/osisaf.met.no")#OSI 430b
 
 
 # Output data
-All saved data is here in the native R data format, therefore designed to be opened and accessed using R software. Script 'S6_PlotSPSandMaps.R' shows the steps used to plot the SPS or create maps of the forecasted sea-ice conditions at a given leadtime for the chosen initial date.
+
+
+# Data Directory
+We will use one specific path for all our data operations. Please choose this appropriately to handle storage issues. Softlinks are also ok.
+MASTERPATH="~/WORK/Data/SDAP/"
+
+In each script, this path has been stated at the top and can be changed with the appropriate storage path. 
+
+Within this masterdirectory, we will divide our outputs by hemisphere.
+For example, HEM="sh" or HEM ="nh"
+HEMPATH=paste0(MASTERPATH,"/",HEM)
+dir.create(paste0(HEMPATH,"/Outputs/"),recursive = T)
+
+All outputs will be saved accordingly in this folder, further divided into subfolders
+
+---------------------
+Sample files are included in the sample directory. However, they are not arranged properly into directories as expected by the script, but are to test individual steps of the process. In case of any issue with the script, codes or the files, please send an email to bniraula@awi.de for clarification. 
