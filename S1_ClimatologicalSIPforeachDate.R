@@ -1,9 +1,10 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
-### This script saves the Climatological SIP for each date using the prev 10 years of SIC. It is designed to be run as part of a batch process, with system args giving 1. Hemisphere, 2. DOY(Date) and 3. Year. If only 2 syst args are given, all years from 1989 to 2021 are used. The script uses the previously saved gaussian weights and grid information (saved in S0_Setup.R). The script can take some time to run, esp for multiple years. It is easy to use this with sbatch to run multiple instances for each DOY.
+### This script saves the Climatological SIP for each date using the prev 10 years of SIC. It is designed to be run as part of a batch process (slurm/cronjob), with command line arguments giving 1. Hemisphere, 2. DOY(Date) and 3. Year. If only 2 args are given, all years from 1989 to 2021 are used. 
+#The script also uses the previously saved gaussian weights and grid information (saved in S0_Setup.R). The script can take some time to run, esp for multiple years. It is easy to use this with sbatch to run multiple instances for each DOY.
 
 
-## First, to detect arguments and all!
+## First, to figure out command line arguments!
 if(length(args)==0)
   stop ("Did not get an argument in !? Try re-running with 1. Hemisphere, 2. DOY (1:366) and 3. (optional) year")
 
@@ -19,7 +20,7 @@ if(length(args)==3) {
 if(ccc == 1) HEM="nh"
 if(ccc== 2)  HEM="sh"
 
-#Same as in every script:
+#Save paths:
 MASTERPATH="~/WORK/Data/SDAP/"
 HEMPATH=paste0(MASTERPATH,"/",HEM)
 Datapath1=paste0(MASTERPATH,"/OSI450/osisaf.met.no") #OSI 450 
@@ -32,7 +33,7 @@ require(spheRlab)
 
 binarise <-function (somearr,dlevel) {  #Function to binarise some given array  based on  this level
   ll=dim(somearr)
-  if (is.null(ll)){ll=length(somearr)}  #because 1d arrays dont do 
+  if (is.null(ll)){ll=length(somearr)}  #because 1d arrays dont have dim, they have lengths
   ibinar=array(dim =ll)
   ibinar[somearr[]>=dlevel]=1
   ibinar[somearr[]<dlevel]=0
@@ -40,7 +41,8 @@ binarise <-function (somearr,dlevel) {  #Function to binarise some given array  
 }
 
 #Gaussian weight file
-gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R*",HEMPATH,HEM)  #If there are multiple versions of the weight file, it might be worth specifying which one
+gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R*",HEMPATH,HEM)  
+#If there are multiple versions of the weight file, it might be worth specifying which one
 
 #Load grid
 gridFilename=paste0(HEMPATH,"/Outputs/gridfile_OSISAF450",HEM,"_all_inclFlags")
@@ -48,18 +50,18 @@ load(gridFilename,envir = (gridenv=new.env()))
 nodes.kept=gridenv$nodes.kept
 
 #### Make climatology ############
-for (yearIC in Ylist){  #Which years? If we gave a third sys arg
+for (yearIC in Ylist){  #Which years? 
   tic("Timing for saving one climatology  ")
   dayy=format(as.Date(yod,origin="2015-12-31"),"%d") 
   monthh=format(as.Date(yod,origin="2015-12-31"),"%m")
   ICdate=sprintf("%d%s%s",yearIC,monthh,dayy)  #as.Date(ICdate,"%Y%m%d")
   
   savename=sprintf("%s/Outputs/Climatology/Filtered_Climatologyfor%s_climatology%dto%d_yod%03d",HEMPATH,ICdate,(yearIC-10),(yearIC-1),yod)
-  if(!length(Sys.glob(savename))==0) next()  #File already exists.
+  if(!length(Sys.glob(savename))==0) next()  #Savefile already exists.
   
+  #First, does the observed data for this date exist?
   ICsic=NA;ICexists=0;sic_original=NA #Default, in case the file doesn't exist for this date.
   ICfile1=Sys.glob(sprintf("%s/reprocessed/ice/conc-cont-reproc/v2p0/%d/%s/*_%s_*%d%s%s1200.nc",Datapath2,yearIC,monthh,HEM,yearIC,monthh,dayy))  #For files from newer bunch aka OSI430b
-  
   if(length(ICfile1)==0) ICfile1=Sys.glob(sprintf("%s/reprocessed/ice/conc/v2p0/%d/%s/*_%s_*%d%s%s1200.nc",Datapath1,yearIC,monthh,HEM,yearIC,monthh,dayy))  #For files from before 2016
   
   if(!length(ICfile1)==0)  ## IF the file does exist (doing this weird way because file.exists doesn't like wildchars)
@@ -82,7 +84,7 @@ for (yearIC in Ylist){  #Which years? If we gave a third sys arg
   
   # Assuming all is well upto here!
   
-  #Now we need to build a climatology for this
+  #Now we need to build a climatology for this date
   sicarr=array(dim=c(10,length(gridenv$grd$lat)))
   
   yrcnt=1

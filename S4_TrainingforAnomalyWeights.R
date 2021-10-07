@@ -39,7 +39,6 @@ SPS_eachtimestep <-function (cell_area,Pfcst,Pobs) {  #Function to find the SPS 
   SPS = ((Pfcst-Pobs)^2)*cell_area
   return (sum(SPS,na.rm = TRUE))}
 SPS_clim <-function (cell_area,sipclimHERE,siobsbinHERE){  
-  #Function to compute SPS of climatology, assuming sipclimHERE (Nlat x 366) and siobsbinHERE (Nlat x 366). 
   ll=min((dim(sipclimHERE)[2]),(dim(siobsbinHERE)[2]))
   SPS=array(NA,dim=ll)
   for (j in 1:ll){
@@ -56,7 +55,7 @@ monthh=format(as.Date(yod,origin="2015-12-31"),"%m")
 
 SPSdampFcst=array(dim = c(length(ylist),20,366))
 SPSdiff=array(dim = c(length(ylist),20,366))  # Diff from Climatological
-SPSdiff_normalised=array(dim = c(length(ylist),20,366))
+SPSdiff_normalised=array(dim = c(length(ylist),20,366)) # Normalised Diff as a ratio of Climatological SPS
 
 #load the file
 for(ynum in 1:length(ylist)){
@@ -69,13 +68,13 @@ for(ynum in 1:length(ylist)){
   
   ### An array of damping:
   alpha=1  #alpha is anomaly weight. If full damping, alpha =0 so SAP part goes to 0
-  t1=seq(0,1,length.out = 20)
+  t1=seq(0,1,length.out = 20)  #Quantised in 20 steps from 0 to 1
   for(counter in 1:20){
     alpha=t1[counter]
     Forecast_wDamping=array(dim = c(length(lat),366))
     
     for (tlead in 1:366){  
-      tempcast=seekenv$Forecast[,tlead]*(alpha)  #If full damping, alpha =0 so Forecast part goes to 0
+      tempcast=seekenv$Forecast[,tlead]*(alpha)  #If full damping, alpha =0 so SAP part goes to 0
       tempcast2=seekenv$AllClimaArr[,tlead]*(1-alpha)
       Forecast_wDamping[,tlead]=tempcast+tempcast2
       remove(tempcast,tempcast2)

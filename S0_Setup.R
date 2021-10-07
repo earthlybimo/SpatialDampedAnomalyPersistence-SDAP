@@ -1,24 +1,23 @@
 ### Script to setup our system and create necessary grid files to generate SDAP forecasts.
 
-
-
-# We need these two R packages to use the method.
+# We first need these two R packages to use the method.
 require(ncdf4)  #To open netcdf files
 require(spheRlab) #To generate contours, plots and other grid functions.
 #https://github.com/FESOM/spheRlab
-require(tictoc) #Used for timing
+require(tictoc) #optional, used for timing, should be included in base R
 
 
-# We will use one specific path for all our data operations. Please choose this appropriately to handle storage issues. Softlinks are also ok.
+# We will use one specific location to save the data. Please choose this appropriately to handle storage issues. Softlinks are also ok. This path should be set at the top of each script before it is run.
 MASTERPATH="~/WORK/Data/SDAP/"
 if(!dir.exists(MASTERPATH)) stop(sprintf("Data directory in MASTERPATH (%s) wasn't found. Please check",MASTERPATH))
 
 #Within this, we will divide our outputs by hemisphere.
-HEM="sh"
+HEM="nh" #or HEM="sh"
 HEMPATH=paste0(MASTERPATH,"/",HEM)
 dir.create(paste0(HEMPATH,"/Outputs/"),recursive = T)
 
-# Now, we need the input data. For this example, we will use the SIC records from OSI SAF. Other SIC records can also be used, although some troubleshooting might be required in further steps. OSI SAF data can be downloaded from here:
+# Now, we need the input data. For this example, we will use the SIC records from OSI SAF. Other SIC records can also be used, although some troubleshooting might be required in further steps. 
+# OSI SAF data can be downloaded from here:
 # ftp://osisaf.met.no/reprocessed/ice/conc/v2p0 #OSI 450  (for years 1979 to 2015)
 # ftp://osisaf.met.no/reprocessed/ice/conc-cont-reproc/v2p0/ #OSI 430b (for years 2016 on)
 
@@ -33,41 +32,37 @@ if(!dir.exists(Datapath2)) warning("Data folder 2 (OSI430b/osisaf.met.no) NOT fo
 
 #Now if things worked, we can start looking at the files:
 
-#Let's look for a data/netcdf file
-file1=Sys.glob(sprintf("%s/reprocessed/ice/conc/v2p0/????/??/*_%s*.nc",Datapath1,HEM))  
-# Here, we depict whether it is a SH or NH file by using the HEM.
+#Let's look for a sample data/netcdf file
+file1=Sys.glob(sprintf("%s/reprocessed/ice/conc/v2p0/????/??/*_%s*.nc",Datapath1,HEM))   #hemisphere decided by the HEM variable.
 if(length(file1)==0) stop("No data file (netcdf) found. Either there is an issue with the path or something in the script is not correct. Check!")
 print(paste0("Things look mostly good so far! Making the grid file now."))
 
 
-##### Section to create the grid/land-lake mask, and save gridfile that can be reused repeatedly-----------------------
+##### Section to create the grid/land-lake mask, and save a grid file -----------------------
 
-gridFilename=paste(HEMPATH,"/Outputs/gridfile_OSISAF450",HEM,"_all_inclFlags",sep = "")
+#For OSISAF, grids can have land/lake flags. First, let's find all land or lake points, by going through some random files. 
+#For other SIC data (non OSISAF), other means/flags should be used to create mask, so this part should be re-checked.  
 
-
-#First, find ALL land or lake points, by combing through all the files. Data otherthan OSI SAF might have other flags to create mask, so this part should be re-checked.  
 allland=NULL
 alllake=NULL
-
 N=length(file1)
-if(N>1000) N=500 #If we have more than 1000 files, just check the first 500
+if(N>500) N=200 #If we have more than 500 files, just use the first 200
 
 for(i in seq(1,N,5)){  #Check every 5th file
   fl=nc_open(file1[i])  
   flag = ncvar_get(fl,"status_flag")
   nc_close(fl)
   
-  flag = as.vector(t(flag))
-  land = which(flag %in% c(1))
-  lake = which(flag %in% c(2,6))  #2 is lake flag, 6 is lake + open water flag, so use both
+  flag = as.vector(t(flag))#2 is lake flag, 6 is lake + open water flag, so use both
+  land = which(flag %in% c(1)); lake = which(flag %in% c(2,6))  
   
   # If these points are not already on our list, get them.
   alllake=c(alllake,lake[!lake %in% alllake])
   allland=c(allland,land[!land %in% allland])
-  
 }
+landorlake = unique(c(alllake,allland))  #Superset of all land or lake points
 
-### Now, let's take one specific file and save the grid from that:
+### Now, let's take one specific file and save the lat/lon from that:
 
 fl = nc_open(file1[1])
 lat = ncvar_get(fl,"lat")
@@ -83,6 +78,7 @@ flag = as.vector(t(flag))
 ###
 totnodes=length(flag)
 
+#In the following step, we use the lat/lon to create a spheRlab format grid
 grd.full = sl.grid.curvilin2unstr(lon = lon, lat = lat, close.sides = FALSE)
 grd = grd.full
 
@@ -90,15 +86,16 @@ grd = grd.full
 # pir = sl.plot.init(projection = "polar", polar.latbound = 65, do.init.device = FALSE, col.background = "#F0F0F0")
 # sl.plot.naturalearth(pir, what="coastline", resolution="medium")
 # sl.plot.end(pir, do.close.device = FALSE)
-
-##land/lake from just one timestep was this:
+##To plot land/lake from just one timestep:
 # land = which(flag %in% c(1))
 # lake = which(flag %in% c(2,6))  #2 is lake flag, 6 is lake + open water flag, so use both
-
 # sl.plot.points(pir, lon = grd$lon[allland], lat = grd$lat[allland], col="brown")
 # sl.plot.points(pir, lon = grd$lon[alllake], lat = grd$lat[alllake], col="blue")
+# Plot is in native display
 
-landorlake = unique(c(alllake,allland))  #This is the superset of all land or lake points from all over the year that was found earlier.
+
+
+## We need to remove the non-ocean points frm the grid:
 
 grd = sl.grid.reduce(grd, remove.points = landorlake, set.coast = TRUE)
 nodes.kept = grd$reduce.kept$nodes
@@ -131,10 +128,6 @@ while (length(remove.pnts) > 0) {
   }
 }
 
-#Now, we can save this gridfile (incl the original maybe) and re-use it for all other time-steps HOPING that the grids are about the same.
-Gridfromwhichfile=file1[1]
-# But note that we are using a bunch of files to look at the flags/nodes.kept 
-
 ###Calculating areas for the grid:###
 Elementareas=array(dim=dim(grd$elem)[[1]])
 for (i in 1:length(Elementareas)){
@@ -149,9 +142,14 @@ for (i in 1:length(Nodeareas)){
   areaofelems=areaofelems[!is.na(areaofelems)]  #but some have less than 6, so some of those points could be NA
   Nodeareas[i]=sum(areaofelems)*(1/3)  #Each element area is shared by 3 nodes, and nodes get shares from all the elements its part of.
 }
-grd$Nodeareas=Nodeareas  #I checked that total Nodearea = Total Elementarea, so this should be correct
+grd$Nodeareas=Nodeareas  #Can check that total Nodearea = Total Elementarea, so this should be correct
 grd$Elementareas=Elementareas
 
+#Now, we can save this grid file and re-use it for all other time-steps, assuming that the grids are about the same fior each file.
+Gridfromwhichfile=file1[1]
+# But note that we used many files to look at the flags (to determine which nodes to use) 
+
+gridFilename=paste(HEMPATH,"/Outputs/gridfile_OSISAF450",HEM,"_all_inclFlags",sep = "")
 save(file = gridFilename,Gridfromwhichfile,grd.full,alllake,allland,grd.postlandlake.prebaynoderemoval,grd,nodes.kept,version = 2)
 
 print(paste0("Grid file saved:",basename(gridFilename)))
@@ -164,15 +162,9 @@ dir.create(paste0(HEMPATH,"/Outputs/Forecasts"))
 dir.create(paste0(HEMPATH,"/Outputs/Alpha"))
 dir.create(paste0(MASTERPATH,"/Figs"))
 
-## These folders are needed if we want to compare whether NO gaussian filtering is better:
-# dir.create(paste(HEMPATH,"/Outputs/NOGausssavedSIP",sep = ""))
-# dir.create(paste(HEMPATH,"/Outputs/NOGaussForecast",sep = ""))
-# dir.create(paste(HEMPATH,"/Outputs/NOGaussAlpha",sep = ""))
-
-
-# We did a gaussian averaging of our climatology maps, for which a gaussian weight file must be generated once.
+# We are doing a Gaussian averaging of our climatology maps, for which a Gaussian weight file must be generated once. This file can be reused for all other maps, as long as the grid is the same.
 ######### Make gaussian weight file: --------------
-print(paste("Save the grid file! Making the gaussian weight file now.",sep = ""))
+print(paste("SMaking the gaussian weight file now.",sep = ""))
 
 tic("Gaussian weight making time:")
 Rsphere=1  #Native grid units ()

@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
-#Script to take the pre-saved inherited anomaly and future/target CLIM to create deterministic/binary Spatial Anomaly Forecasts (SAP). Takes in sys args 1. Hemisphere and 2. (optional) Which year. Then runs forecast for all initialisation files within that year
+#Script to take the pre-saved inherited anomaly and future/target CLIM to create deterministic/binary Spatial Anomaly Forecasts (SAP). 
+#Takes in command line args 1. Hemisphere and 2. (optional) Which year. Then runs forecast for all initialisation files found for that year. If no year given, runs for all years from 1989 to 2021
 ccc=as.integer(args[1]) #Choice of Hemisphere
 if(ccc == 1)  HEM="nh"
 if(ccc == 2)  HEM="sh"
@@ -25,13 +26,12 @@ binarise <-function (somearr,dlevel) {  #Function to binarise some given array  
   ibinar=array(dim =ll)
   ibinar[somearr[]>=dlevel]=1
   ibinar[somearr[]<dlevel]=0
-  return (ibinar)
-}
+  return (ibinar)}
 SPS_eachtimestep <-function (cell_area,Pfcst,Pobs) {  #Function to find the SPS at each timestep
   SPS = ((Pfcst-Pobs)^2)*cell_area
   return (sum(SPS,na.rm = TRUE))}
 SPS_clim <-function (cell_area,sipclimHERE,siobsbinHERE){  
-  #Function to compute SPS of climatology, assuming sipclimHERE (Nlat x 366) and siobsbinHERE (Nlat x 366). 
+  #Function to compute SPS of climatology or other forecast, assuming sipclimHERE (gridlen x 366) and siobsbinHERE (glen x 366). 
   ll=min((dim(sipclimHERE)[2]),(dim(siobsbinHERE)[2]))
   SPS=array(NA,dim=ll)
   for (j in 1:ll){
@@ -47,8 +47,7 @@ for(yrs in Ylist){
   if(length(filelist)==0) {next()}
   
   for(listi in 1:length(filelist))   #listi=1
-  {
-    tic("Deterministic forecasting, one initialisation step time: ")  
+  { tic("Deterministic forecasting, one initialisation step time: ")  
     
     load(filelist[listi])  #saved SIP and climatology of initial date
     savename=sprintf("%s/Outputs/Forecasts/determinForecastfor%s_yod%03d",HEMPATH,ICdate,yod)
@@ -56,25 +55,26 @@ for(yrs in Ylist){
     
     inhSIPcorrected=SIPreturn[3,]  #neighbourhood corrected inherited Anomalies
     
-    ### Preparing the necessary future climatologies + initial condition to compare against
+    ## First, prepare future climatologies for forecasting + initial condition to compare against (if they exist)
     Climaenv=new.env()
     AllClimaArr=array(dim=c(length(SIPclima),366))
-    AllClimaArr[,1]=SIPclima
     AllInitialArr=array(dim=c(length(SIPclima),366))
-    AllInitialArr[,1]=ICsic
     ObsExist=array(1,dim=366)
     
-    for(i in 1:365) #going through the next 365 days of leadtime (such that leadtime 0 is the initial date), for forecasting and also for future SPS
-    {
-      seekdate=format(as.Date(ICdate,"%Y%m%d")+i,"%Y%m%d")  
-      ##Here, the ICdate + automatically skips Feb29 for not leap years. That does not seem to cause any issue. 
+    #Day 1 is just initial date (leadtime 0), so we already have this info
+    AllClimaArr[,1]=SIPclima
+    AllInitialArr[,1]=ICsic
+    
+    for(i in 1:365) #going through the next 365 days of leadtime
+    { seekdate=format(as.Date(ICdate,"%Y%m%d")+i,"%Y%m%d")  
+      #Here, the ICdate + automatically skips Feb29 for not leap years. That does not cause any issue. 
       
       YrClimafile=Sys.glob(sprintf("%s/Outputs/Climatology/Filtered_Climatologyfor%s_*",HEMPATH,seekdate))
-      #So for each leadtime, we want the climatology, to forecast, and the true condition to compare
-       if(length(YrClimafile)==0){  #ie there is no Clima file with IC
+      #So for each leadtime, we want the climatology to forecast, and the true condition to compare
+       if(length(YrClimafile)==0){  #ie there is no Clima file with IC, so look for NOIC climatology
         AllInitialArr[,i+1]=NaN
         ObsExist[i+1]=0
-        YrClimafile=Sys.glob(sprintf("%s/Outputs/Climatology/NOICFiltered_Climatologyfor%s_*",HEMPATH,seekdate))  #Maybe there is a climafile without IC?
+        YrClimafile=Sys.glob(sprintf("%s/Outputs/Climatology/NOICFiltered_Climatologyfor%s_*",HEMPATH,seekdate))
         if(length(YrClimafile)==0)  {AllClimaArr[,i+1]=NaN;next()}
       }
       
@@ -84,10 +84,7 @@ for(yrs in Ylist){
       if(ObsExist[i+1]) AllInitialArr[,i+1]=Climaenv$ICsic
     }  
     
-    ICbinaryall=binarise(AllInitialArr,0.15)
-    ClimaMedian=binarise(AllClimaArr,0.50)
-    
-    ### Actual Forecasting section
+    ### Second, Actual Forecasting 
     Forecast=array(dim = c(length(SIPclima),366))
     for (leadtime in 1:366){  
       fcstsicondition=inhSIPcorrected*0
@@ -96,21 +93,28 @@ for(yrs in Ylist){
     }
     
     ### Verification/ SPS section
+    ICbinaryall=binarise(AllInitialArr,0.15)
+    ClimaMedian=binarise(AllClimaArr,0.50)
+    
     SPSForecast=SPS_clim(grd$Nodeareas,Forecast,ICbinaryall)
     SPSClimatological=SPS_clim(grd$Nodeareas,AllClimaArr,ICbinaryall)
     SPSClimMedian=SPS_clim(grd$Nodeareas,ClimaMedian,ICbinaryall)
     SPSPersist=SPS_persist(grd$Nodeareas,ICbinaryall)
     
+    #Note that a Factor should be applied to all the SPS values. 
+    #For the OSI SAF grid here, we multiply by Fctr=((6371^2)/1000000) to convert the SPS to mill sq kms
+    
     ## If we want to plot the SPS :
     # 
-    # plot(SPSForecast,type = "line",xlim=c(1,120),col="blue",)
-    # lines(SPSPersist,col="red")
-    # lines(SPSClimMedian,col="pink")
-    # lines(SPSClimatological,lty=3,col="green")
+    # Fctr=((6371^2)/1000000)
+    # plot(SPSForecast*Fctr,type = "line",xlim=c(1,120),col="blue",lwd=2)
+    # lines(SPSPersist*Fctr,col="red")
+    # lines(SPSClimMedian*Fctr,col="pink")
+    # lines(SPSClimatological*Fctr,lty=3,col="grey")
     
     SPS_list=list(SPSClimMedian=SPSClimMedian,SPSPersist=SPSPersist,SPSClimatological=SPSClimatological,SPSForecast=SPSForecast)
     save(Forecast,AllClimaArr,AllInitialArr,SIPreturn,SIPclima,SPS_list,grd,ICdate,file = savename,version = 2)
-    print(paste("Saved deterministic forecast file: ",basename(savename),sep = ""))
+    print(paste("Saved SAP (deterministic) forecast file: ",basename(savename),sep = ""))
     remove(Forecast,AllClimaArr,AllInitialArr,SIPclima)
     toc()
   }

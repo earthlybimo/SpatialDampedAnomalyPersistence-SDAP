@@ -3,16 +3,17 @@ args = commandArgs(trailingOnly=TRUE)
 
 #Script to take pre-saved deterministic/SAP forecast file and anomaly weight files and use these to create the probabilistic Spatial Damped Anmaly Forecasts (SDAP)
 
-#Again, syst args are 1. Hemisphere, 2. Initialisation month and 3. (optional) forecast year
+#Again, syst args are 1. Hemisphere, 2. Initialisation month and 3. (optional) forecast year (or all years if left blank)
 
 ccc=as.integer(args[1]) #Choice of Hemisphere
 if(ccc == 1){
   HEM="nh"
-  Alphasetname="NewTraining_2021NH_yrs89to98"}
+  Alphasetname="NewTraining_2021NH_yrs89to98"} #To test with diff training sets, simply change this part appropriately
 
 if(ccc== 2){
   HEM="sh"
   Alphasetname="NewTraining_2021SH_yrs89to98"}
+
 mc=as.integer(args[2]) #Choice of initialisation date (each doy corresponds to the start of a particular month)
 yodlist=c(1,32,61,92,122,153,183,214,245,275,306,336)
 yodi= yodlist[mc]
@@ -40,7 +41,6 @@ SPS_eachtimestep <-function (cell_area,Pfcst,Pobs) {  #Function to find the SPS 
   SPS = ((Pfcst-Pobs)^2)*cell_area
   return (sum(SPS,na.rm = TRUE))}
 SPS_clim <-function (cell_area,sipclimHERE,siobsbinHERE){  
-  #Function to compute SPS of climatology, assuming sipclimHERE (Nlat x 366) and siobsbinHERE (Nlat x 366). 
   ll=min((dim(sipclimHERE)[2]),(dim(siobsbinHERE)[2]))
   SPS=array(NA,dim=ll)
   for (j in 1:ll){
@@ -55,25 +55,27 @@ dayy=format(as.Date(yodi,origin="2015-12-31"),"%d")
 monthh=format(as.Date(yodi,origin="2015-12-31"),"%m")
 
 Alphafile=sprintf("%s/Outputs/Alpha/%s_yod%03i",HEMPATH,Alphasetname,yodi)
-if(!file.exists(Alphafile)) stop(paste0("Did not file with anomaly weight: ",basename(Alphafile)))
+if(!file.exists(Alphafile)) stop(paste0("Did not file with anomaly weights: ",basename(Alphafile)))
 
 load(Alphafile);lat=grd$lat
 ## Now let's use the pre-saved alpha to make our new forecast
 SPSdiffmean_normalised=colMeans(SPSdiff_normalised,na.rm = TRUE)
 maxcoll=max.col(t(SPSdiffmean_normalised))
-bestalpha=t1[maxcoll]
+bestalpha=t1[maxcoll]  #Results in a vector of anomaly weights, one for each leadtime 
 
 for(ynum in 1:length(fcstylist)){
   ICdate=sprintf("%d%s%s",fcstylist[ynum],monthh,dayy)
   savename=sprintf("%s/Outputs/Forecasts/DampedForecast_%s_%s_yod%03d",HEMPATH,ICdate,Alphasetname,yod)
-  if(file.exists(savename)) next()
+  if(file.exists(savename)) next()  #Already saved. 
+  
+  # Load SAP/deterministic forecast
   detFcfile=Sys.glob(sprintf("%s/Outputs/Forecasts/determinForecastfor%s_yod%03d",HEMPATH,ICdate,yodi))  #This was the format how Det/SAPFcsts were saved
   if(length(detFcfile)==0) next()
   load(file = detFcfile,envir = (detFcenv=new.env()))
   
+  # Apply damping
   Forecast_wDamping=(detFcenv$Forecast)*0
   ICbinaryall=binarise(detFcenv$AllInitialArr,0.15);    
-  
   for (leadtime in 1:366){  
     alpha=bestalpha[leadtime]
     tempcast=detFcenv$Forecast[,leadtime]*(alpha)  #alpha =0 when SAP weight in the Forecast = 0
@@ -83,11 +85,13 @@ for(ynum in 1:length(fcstylist)){
   }
   
   
-  ## Compute the SPS  --------
+  # Compute the SPS  --------
   SPSForecastwdamping=SPS_clim(grd$Nodeareas,Forecast_wDamping,ICbinaryall)
+  
+  ## Save:
   savename=sprintf("%s/Outputs/Forecasts/DampedForecast_%s_%s_yod%03d",HEMPATH,ICdate,Alphasetname,yod)
   save(detFcenv,SPSForecastwdamping,Forecast_wDamping, file = savename,version =2)
+  #In these files, the original SAP forecasts and SPS (SAP, CLIM, PERS) are all saved inside the 'detFcenv' environment.
   print(paste("Saved file: ",basename(savename),sep = ""))
-  #In these files, the original SAP forecasts and SPS (SAP, CLIM, PERS) from the SAP fcst file are saved inside the 'detFcenv' environment.
   remove(detFcenv,SPSForecastwdamping,Forecast_wDamping);invisible(gc())
 }  #End of the year/detFcst
