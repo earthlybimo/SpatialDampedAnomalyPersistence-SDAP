@@ -1,9 +1,12 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
 ### Script to setup our system and create necessary grid files to generate SDAP forecasts.
 
 # We first need these two R packages to use the method.
 require(ncdf4)  #To open netcdf files
-require(spheRlab) #To generate contours, plots and other grid functions.
-#https://github.com/FESOM/spheRlab
+require(spheRlab) #To generate contours, plots and other grid functions. If it does not exist::
+#https://github.com/FESOM/spheRlab; git clone... ; > install.packages("~/Scripts/spheRlab/", repos = NULL, type = "source")
 require(tictoc) #optional, used for timing, should be included in base R
 
 
@@ -12,7 +15,11 @@ MASTERPATH="~/WORK/Data/SDAP/"
 if(!dir.exists(MASTERPATH)) stop(sprintf("Data directory in MASTERPATH (%s) wasn't found. Please check",MASTERPATH))
 
 #Within this, we will divide our outputs by hemisphere.
-HEM="nh" #or HEM="sh"
+
+ccc=as.integer(args[1]) #Choice of Hemisphere
+if(ccc == 1) HEM="nh"
+if(ccc== 2)  HEM="sh"
+
 HEMPATH=paste0(MASTERPATH,"/",HEM)
 dir.create(paste0(HEMPATH,"/Outputs/"),recursive = T)
 
@@ -79,8 +86,7 @@ flag = as.vector(t(flag))
 totnodes=length(flag)
 
 #In the following step, we use the lat/lon to create a spheRlab format grid
-grd.full = sl.grid.curvilin2unstr(lon = lon, lat = lat, close.sides = FALSE)
-grd = grd.full
+grd.full = sl.grid.curvilin2unstr(lon = lon, lat = lat, close.sides = TRUE)
 
 # sample plot
 # pir = sl.plot.init(projection = "polar", polar.latbound = 65, do.init.device = FALSE, col.background = "#F0F0F0")
@@ -97,7 +103,7 @@ grd = grd.full
 
 ## We need to remove the non-ocean points frm the grid:
 
-grd = sl.grid.reduce(grd, remove.points = landorlake, set.coast = TRUE)
+grd = sl.grid.reduce(grd.full, remove.points = landorlake, set.coast = TRUE)
 nodes.kept = grd$reduce.kept$nodes
 grd.postlandlake.prebaynoderemoval = grd
 
@@ -174,6 +180,6 @@ gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R%i_cutoff%i",HEMPATH,HEM,Rspher
 
 sf.gw.res=sl.spatialfilter.getweights(lon=grd$lon,lat=grd$lat,neighmat = grd$neighnodes,areas = grd$Nodeareas,Rsphere = 1,gauss.sigma = gauss.sigma,cutoff = cutoff*gauss.sigma)#for this specific grid, the weights are the same. it results in this list: sf.gw.res
 save(file = gsnwtfile,sf.gw.res,version = 2)  
-print(paste0("Gaussian weight saved: ",basename(gsnwtfile)))
+print(paste0("Gaussian weights for ",HEM," hemisphere saved: ",basename(gsnwtfile)))
 toc()
 print("All done with Setup!")
