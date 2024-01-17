@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
+ccc=as.integer(args[1]) #Choice of Hemisphere  ccc=1 # to test
 
 ### Script to setup our system and create necessary grid files to generate SDAP forecasts.
 
@@ -16,21 +17,22 @@ if(!dir.exists(MASTERPATH)) stop(sprintf("Data directory in MASTERPATH (%s) wasn
 
 #Within this, we will divide our outputs by hemisphere.
 
-ccc=as.integer(args[1]) #Choice of Hemisphere
+
 if(ccc == 1) HEM="nh"
 if(ccc== 2)  HEM="sh"
 
-HEMPATH=paste0(MASTERPATH,"/",HEM)
-dir.create(paste0(HEMPATH,"/Outputs/"),recursive = T)
+HEMPATH=paste0(MASTERPATH,HEM,"/")
+dir.create(paste0(HEMPATH,"Outputs/"),recursive = T)
 
 # Now, we need the input data. For this example, we will use the SIC records from OSI SAF. Other SIC records can also be used, although some troubleshooting might be required in further steps. 
 # OSI SAF data can be downloaded from here:
 # ftp://osisaf.met.no/reprocessed/ice/conc/v2p0 #OSI 450  (for years 1979 to 2015)
-# ftp://osisaf.met.no/reprocessed/ice/conc-cont-reproc/v2p0/ #OSI 430b (for years 2016 on)
+# ftp://osisaf.met.no/reprocessed/ice/conc-cont-reproc/v2p0/ #OSI 430a (for years 2016 on)
 
 # For this example, we will assume that the data has already been downloaded in these locations:
-Datapath1=paste0(MASTERPATH,"/OSI450/osisaf.met.no") #OSI 450 
-Datapath2=paste0(MASTERPATH,"/OSI430b/osisaf.met.no")#OSI 430b
+DataRoot="~/WORK/Data/OSISAF/"
+Datapath1=paste0(DataRoot,"/OSI450/osisaf.met.no") #OSI 450 
+Datapath2=paste0(DataRoot,"/OSI430a/osisaf.met.no")#OSI 430a
 # OSI SAF 450 was continued as OSI 430b after 2016, therefore we have 2 datapaths here. They can also be merged into one directory, but here we have left them in the original structure.
 
 if(!dir.exists(Datapath1)) stop("Data folder (OSI450/osisaf.met.no) NOT found! Check that there is a folder or a softlink.")
@@ -74,7 +76,7 @@ landorlake = unique(c(alllake,allland))  #Superset of all land or lake points
 fl = nc_open(file1[1])
 lat = ncvar_get(fl,"lat")
 lon = ncvar_get(fl,"lon")
-sic = ncvar_get(fl,"ice_conc")/100
+sic = ncvar_get(fl,"ice_conc")/100  #Check this if using not OSISAF, is conc in fraction or percent?
 flag = ncvar_get(fl,"status_flag")
 nc_close(fl)
 
@@ -155,18 +157,18 @@ grd$Elementareas=Elementareas
 Gridfromwhichfile=file1[1]
 # But note that we used many files to look at the flags (to determine which nodes to use) 
 
-gridFilename=paste(HEMPATH,"/Outputs/gridfile_OSISAF450",HEM,"_all_inclFlags",sep = "")
+gridFilename=paste(HEMPATH,"Outputs/gridfile_OSISAF450",HEM,"_all_inclFlags",sep = "")
 save(file = gridFilename,Gridfromwhichfile,grd.full,alllake,allland,grd.postlandlake.prebaynoderemoval,grd,nodes.kept,version = 2)
 
 print(paste0("Grid file saved:",basename(gridFilename)))
 
 ######### Make other folders that we need: --------------
 
-dir.create(paste0(HEMPATH,"/Outputs/Climatology"))
-dir.create(paste0(HEMPATH,"/Outputs/savedSIP"))
-dir.create(paste0(HEMPATH,"/Outputs/Forecasts"))
-dir.create(paste0(HEMPATH,"/Outputs/Alpha"))
-dir.create(paste0(MASTERPATH,"/Figs"))
+dir.create(paste0(HEMPATH,"Outputs/Climatology"))
+dir.create(paste0(HEMPATH,"Outputs/savedSIP"))
+dir.create(paste0(HEMPATH,"Outputs/Forecasts"))
+dir.create(paste0(HEMPATH,"Outputs/Alpha"))
+dir.create(paste0(MASTERPATH,"Figs"))
 
 # We are doing a Gaussian averaging of our climatology maps, for which a Gaussian weight file must be generated once. This file can be reused for all other maps, as long as the grid is the same.
 ######### Make gaussian weight file: --------------
