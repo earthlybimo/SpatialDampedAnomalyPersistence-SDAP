@@ -170,7 +170,7 @@ dir.create(paste0(HEMPATH,"Outputs/Forecasts"))
 dir.create(paste0(HEMPATH,"Outputs/Alpha"))
 dir.create(paste0(MASTERPATH,"Figs"))
 
-# We are doing a Gaussian averaging of our climatology maps, for which a Gaussian weight file must be generated once. This file can be reused for all other maps, as long as the grid is the same.
+# We are doing a Gaussian averaging of our climatology maps, for which a Gaussian weight file must be generated once. This file can be reused for all other maps, as long as the grid is the same. HOWEVER, it can be a long/slow/large process, so using parallel processing might be necessary..
 ######### Make gaussian weight file: --------------
 print(paste("SMaking the gaussian weight file now.",sep = ""))
 
