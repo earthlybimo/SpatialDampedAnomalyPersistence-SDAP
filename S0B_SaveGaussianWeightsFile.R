@@ -23,12 +23,12 @@ load(gridFilename)
 
 tic("Gaussian weight making time:")
 Rsphere=1  #Native grid units ()
-gauss.sigma=2*pi*Rsphere/360
-cutoff=1 #*gauss.sigma # One can change this later!
-
-gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R%i_cutoff%i",HEMPATH,HEM,Rsphere,cutoff)
+gauss.sigma=1*pi*Rsphere/360
+cutoff=2*gauss.sigma # One can change this later!
 
 sf.gw.res=sl.spatialfilter.getweights(lon=grd$lon,lat=grd$lat,neighmat = grd$neighnodes,areas = grd$Nodeareas,Rsphere = 1,gauss.sigma = gauss.sigma,cutoff = cutoff*gauss.sigma)#for this specific grid, the weights are the same. it results in this list: sf.gw.res
+
+gsnwtfile=sprintf("%s/Outputs/gaussianweights%s_R%i_cutoff%i",HEMPATH,HEM,Rsphere,cutoff)
 save(file = gsnwtfile,sf.gw.res,version = 2)  
 print(paste0("Gaussian weights for ",HEM," hemisphere saved: ",basename(gsnwtfile)))
 toc()
