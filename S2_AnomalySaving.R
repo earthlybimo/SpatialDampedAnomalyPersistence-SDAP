@@ -83,9 +83,10 @@ for(yrs in Ylist){
     if(length(Climatologyfile)==0) {warning(paste("Climafile not found for year ",yrs," day ",yodi,sep = ""));next()}
     load(Climatologyfile)
     
-    savename=sprintf("%s/Outputs/savedSIP/SIPinheritedetcfor%s",HEMPATH,ICdate)
+    savename=sprintf("%s/Outputs/savedSIP/SIP_anomaly_initialisedfor_%s",HEMPATH,ICdate)
     if(file.exists(savename)) next()  #If this file already exists, don't have to redo it.
     
+    print(paste0("Saving anomalies for Day ",yodi," year ",yrs))
     tic("One initial step")
     SIPclima=SIPclimaGFilt  #Using the gaussian filtered version. ``````````````````
     err=FALSE
