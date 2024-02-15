@@ -9,8 +9,8 @@ if(length(args)==0)
   stop ("Did not get an argument in !? Try re-running with 1. Hemisphere, 2. DOY (1:366) and 3. (optional) year")
 
 ccc=as.integer(args[1]) #Choice of Hemisphere
-
 yod=as.integer(args[2]) #DOY
+
 Ylist=1989:2021
 if(length(args)==3) {
   temp=as.integer(args[3])
@@ -23,9 +23,9 @@ if(ccc== 2)  HEM="sh"
 #Save paths:
 MASTERPATH="~/WORK/Data/SDAP/"
 HEMPATH=paste0(MASTERPATH,"/",HEM)
-Datapath1=paste0(MASTERPATH,"/OSI450/osisaf.met.no") #OSI 450 
-Datapath2=paste0(MASTERPATH,"/OSI430b/osisaf.met.no")#OSI 430b
-
+DataRoot="~/WORK/Data/OSISAF/"
+Datapath1=paste0(DataRoot,"/OSI450/osisaf.met.no") #OSI 450 
+Datapath2=paste0(DataRoot,"/OSI430a/osisaf.met.no")#OSI 430a
 
 require(ncdf4)
 require(tictoc)
