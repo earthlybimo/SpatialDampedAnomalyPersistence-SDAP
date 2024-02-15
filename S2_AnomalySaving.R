@@ -35,7 +35,8 @@ HEMPATH=paste0(MASTERPATH,"/",HEM)
 require(ncdf4)
 require(spheRlab)
 require(tictoc)
-library(parallel)  #Certain functions can also be parallelised to speed process, but optional
+require(plyr)
+#library(parallel)  #Certain functions can also be parallelised to speed process, but optional
 
 #Declaring some functions beforehand for ease of usage
 binarise <-function (somearr,dlevel) {  #Function to binarise some given array  based on  this level
