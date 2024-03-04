@@ -16,7 +16,7 @@ if(length(args)>1) {
   DOYlist=temp
   remove(temp,mch)}
 
-Ylist=1989:2021
+Ylist=1989:2024
 if(length(args)==3) {
   temp=as.integer(args[3])
   if((temp>=1989)&(temp<=2022))  Ylist=temp #Will be just a single year now

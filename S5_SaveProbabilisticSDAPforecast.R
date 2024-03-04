@@ -18,7 +18,7 @@ mc=as.integer(args[2]) #Choice of initialisation date (each doy corresponds to t
 yodlist=c(1,32,61,92,122,153,183,214,245,275,306,336)
 yodi= yodlist[mc]
 
-fcstylist=1999:2021
+fcstylist=1999:2024  #Here, 1999 is used as the lower limit SIMPLY because we know that the training is 1989 to 1998.. if we use a diff training years set, can change this as well
 if(length(args)==3) {
   temp=as.integer(args[3])
   if((temp>=1989)&(temp<=2022))  fcstylist=temp #Will be just a single year now
