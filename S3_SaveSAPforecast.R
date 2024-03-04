@@ -3,7 +3,7 @@ args = commandArgs(trailingOnly=TRUE)
 
 #Script to take the pre-saved inherited anomaly and future/target CLIM to create deterministic/binary Spatial Anomaly Forecasts (SAP). 
 #Takes in command line args 1. Hemisphere and 2. (optional) Which year. Then runs forecast for all initialisation files found for that year. If no year given, runs for all years from 1989 to 2021
-ccc=as.integer(args[1]) #Choice of Hemisphere
+ccc=as.integer(args[1]) #Choice of Hemisphere ccc=1
 if(ccc == 1)  HEM="nh"
 if(ccc == 2)  HEM="sh"
 
@@ -40,10 +40,16 @@ SPS_clim <-function (cell_area,sipclimHERE,siobsbinHERE){
       SPS[j]=SPS_eachtimestep(cell_area,sipclimHERE[,j],siobsbinHERE[,j])  }
   }
   return (SPS)}
+SPS_persist <-function (cell_area,siobsbinHERE){  
+  #Function to compute SPS of persistance, comparing siobsbinHERE (Nlat x 366) for each day against that of day 1.
+  SPS=array(NA,dim=366)
+  for (j in 1:366){SPS[j]=SPS_eachtimestep(cell_area,siobsbinHERE[,1],siobsbinHERE[,j])}
+  return (SPS)
+}
 
-# yrs=2014
-for(yrs in Ylist){
-  filelist=sort(Sys.glob(paste(HEMPATH,"/Outputs/savedSIP/SIPinheritedetcfor",yrs,"*",sep = "")))
+
+for(yrs in Ylist){# yrs=2014
+  filelist=sort(Sys.glob(paste(HEMPATH,"/Outputs/savedSIP/SIP_anomaly_initialisedfor_",yrs,"*",sep = "")))
   if(length(filelist)==0) {next()}
   
   for(listi in 1:length(filelist))   #listi=1
