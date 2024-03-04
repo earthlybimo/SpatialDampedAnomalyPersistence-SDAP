@@ -15,11 +15,11 @@ ylist=1989:1998
 # Also recommended to save the Alphaset (training weights) with a descriptive name in case you wish to test/compare different years/sets, separated by the hemisphere
 if(ccc == 1){
   HEM="nh"
-  Alphasetname="NewTraining_2021NH_yrs89to98"}
+  Alphasetname="SDAP_2024Training_NH_Trainyrs89to98"}
 
 if(ccc== 2){
   HEM="sh"
-  Alphasetname="NewTraining_2021SH_yrs89to98"}
+  Alphasetname="SDAP_2024Training_SH_Trainyrs89to98"}
 
 require(tictoc)
 tic("whole script")
